@@ -415,18 +415,20 @@ describe("exec approvals store helpers", () => {
 
   it("falls back through blank normalized socket path/token to current and built-in defaults", () => {
     createHomeDir();
-    const current = normalizeExecApprovals({
+    const current: ExecApprovalsFile = {
       version: 1,
       agents: {},
       socket: { path: "/tmp/cur.sock", token: "cur-token" },
-    });
+    };
 
-    // Blank/whitespace normalized values must fall through to current, not be retained as "".
-    const normalizedBlank = normalizeExecApprovals({
+    // Pass raw blank values directly to mergeExecApprovalsSocketDefaults,
+    // bypassing normalizeExecApprovals (which strips blank socket fields).
+    // This verifies the || fallback in the changed helper itself.
+    const normalizedBlank: ExecApprovalsFile = {
       version: 1,
       agents: {},
       socket: { path: "   ", token: "" },
-    });
+    };
     const merged = mergeExecApprovalsSocketDefaults({ normalized: normalizedBlank, current });
     expect(merged.socket).toEqual({
       path: "/tmp/cur.sock",
@@ -436,7 +438,7 @@ describe("exec approvals store helpers", () => {
     // Both blank: falls through to current path/token, then to built-in defaults.
     const bothBlank = mergeExecApprovalsSocketDefaults({
       normalized: normalizedBlank,
-      current: normalizeExecApprovals({ version: 1, agents: {}, socket: { path: "", token: "" } }),
+      current: { version: 1, agents: {}, socket: { path: "", token: "" } },
     });
     expect(bothBlank.socket?.path).toBe(resolveExecApprovalsSocketPath());
     expect(bothBlank.socket?.token).toMatch(/^[A-Za-z0-9_-]{32}$/);
